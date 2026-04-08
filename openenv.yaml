@@ -1,1 +1,9 @@
+name: solar-env
+description: Solar energy optimization
 
+tasks:
+  - easy
+  - medium
+  - hard
+
+reward_range: [0.0, 1.0]
