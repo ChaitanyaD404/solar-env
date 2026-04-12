@@ -5,8 +5,8 @@ from env import SolarEnv
 # ==================================================
 # REQUIRED ENV VARIABLES (judge injects these)
 # ==================================================
-API_BASE_URL = os.environ["https://their-proxy-server/v1"]
-API_KEY = os.environ["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"]
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 # ==================================================
@@ -36,12 +36,10 @@ print(f"[START] task=easy env=solar-env model={MODEL_NAME}")
 try:
     client.chat.completions.create(
         model=MODEL_NAME,
-        messages=[
-            {"role": "user", "content": "Respond with exactly: noop"}
-        ],
+        messages=[{"role": "user", "content": "Reply only: noop"}],
         temperature=0
     )
-except:
+except Exception:
     pass
 
 # ==================================================
@@ -51,9 +49,6 @@ try:
     while not done and step_count < 24:
         step_count += 1
 
-        # ------------------------------------------
-        # GET ACTION FROM LLM PROXY
-        # ------------------------------------------
         try:
             response = client.chat.completions.create(
                 model=MODEL_NAME,
@@ -61,12 +56,10 @@ try:
                     {
                         "role": "user",
                         "content": f"""
-You are controlling a solar energy environment.
-
 Observation:
 {obs}
 
-Choose ONE valid action only:
+Choose ONE action only:
 noop
 charge
 discharge
@@ -74,7 +67,7 @@ clean_1
 clean_2
 clean_3
 
-Return only the action word.
+Return only the action.
 """
                     }
                 ],
@@ -83,13 +76,9 @@ Return only the action word.
 
             action = response.choices[0].message.content.strip().lower()
 
-        except:
-            # fallback if proxy has issue
+        except Exception:
             action = "noop"
 
-        # ------------------------------------------
-        # SAFETY FILTER
-        # ------------------------------------------
         valid_actions = [
             "noop",
             "charge",
@@ -102,12 +91,9 @@ Return only the action word.
         if action not in valid_actions:
             action = "noop"
 
-        # ------------------------------------------
-        # STEP ENV
-        # ------------------------------------------
         try:
             obs, reward, done, info = env.step(action)
-            reward_value = float(round(reward.score, 2))
+            reward_value = round(float(reward.score), 2)
             error = "null"
 
         except Exception as e:
@@ -134,7 +120,7 @@ except Exception as e:
     )
 
 # ==================================================
-# FINAL SCORE (0 to 1)
+# FINAL SCORE
 # ==================================================
 if rewards:
     raw = sum(rewards) / len(rewards)
